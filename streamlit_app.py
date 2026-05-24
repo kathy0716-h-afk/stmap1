@@ -48,8 +48,41 @@ def fetch_weather_data():
 with st.spinner('最新の気温データを取得中...'):
     df = fetch_weather_data()
 
-# 気温を高さ（メートル）に変換（例：1度 = 3000m）
+# 気温を高さ（メートル）に変換
 df['elevation'] = df['Temperature'] * 3000
+
+# --- 色の計算ロジック（気温に基づくグラデーション） ---
+def get_color(temperature):
+    # 気温の範囲（ここでは東北の冬〜夏を想定: -10度〜30度）
+    min_temp = -10
+    max_temp = 30
+    
+    # 範囲内に収める
+    temp = max(min(temperature, max_temp), min_temp)
+    
+    # 正規化 (0.0 〜 1.0)
+    ratio = (temp - min_temp) / (max_temp - min_temp)
+    
+    # グラデーション計算（青 -> 緑 -> 黄 -> 赤）
+    # 鮮やかな色になるようにRGBを調整
+    if ratio < 0.33: # 青 -> 緑
+        r = 0
+        g = int(255 * (ratio / 0.33))
+        b = 255
+    elif ratio < 0.66: # 緑 -> 黄
+        r = int(255 * ((ratio - 0.33) / 0.33))
+        g = 255
+        b = int(255 * (1 - (ratio - 0.33) / 0.33))
+    else: # 黄 -> 赤
+        r = 255
+        g = int(255 * (1 - (ratio - 0.66) / 0.34))
+        b = 0
+    
+    # RGBA [R, G, B, Alpha] (不透明度を200に上げてはっきり見せる)
+    return [r, g, b, 200]
+
+# データフレームに色の列を追加
+df['color'] = df['Temperature'].apply(get_color)
 
 # --- メインレイアウト ---
 col1, col2 = st.columns([1, 2])
@@ -65,11 +98,11 @@ with col1:
 with col2:
     st.subheader("3D カラムマップ")
 
-    # Pydeck の設定（東北地方の中心にカメラを合わせる）
+    # Pydeck の設定
     view_state = pdk.ViewState(
-        latitude=39.5,   # 東北の中心付近（岩手・秋田あたり）
+        latitude=39.5,
         longitude=140.5,
-        zoom=6.0,        # 九州より少し広めに映るように微調整
+        zoom=6.0,
         pitch=45,
         bearing=0
     )
@@ -79,9 +112,10 @@ with col2:
         data=df,
         get_position='[lon, lat]',
         get_elevation='elevation',
-        radius=12000,        # 柱の太さ
-        get_fill_color='[255, 100, 0, 180]', # 柱の色（オレンジ系）
-        pickable=True,       # ホバーを有効に
+        radius=12000,
+        # --- ここを変更: データフレームの'color'列を参照するように ---
+        get_fill_color='color', 
+        pickable=True,
         auto_highlight=True,
     )
 
