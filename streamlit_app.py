@@ -4,8 +4,8 @@ import pandas as pd
 import pydeck as pdk
 
 # --- ページ設定 ---
-st.set_page_config(page_title="日本全国気温 3D Map", layout="wide")
-st.title("日本全国（47都道府県）の現在の気温 3Dカラムマップ")
+st.set_page_config(page_title="📍日本全国気温 3D Map", layout="wide")
+st.title("🗺️日本全国（47都道府県）の現在の気温 3Dカラムマップ")
 
 # 47都道府県のデータ（県庁所在地の緯度・経度）
 japan_capitals = {
